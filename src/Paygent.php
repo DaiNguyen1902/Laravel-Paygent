@@ -43,72 +43,23 @@ class Paygent
         $this->paygent->reqPut('telegram_version', $telegram_version);
     }
 
-    /*
+    /**
      * Pay by credit card
-     * @param array $params Payment data
-     * @param int split_count number of instalments
-     * @param string card_token token
-     * @param string trading_id order number
-     * @param string payment_amount amount
-     * @return array
+     * @param  [array] $input     [description]
+     * @return [type]                 [description]
      */
-    public function paySend($split_count, $card_token, $customer_id, $trading_id, $payment_amount)
+    public function makeCreditCardPayment($input)
     {
-        $customer_check = $this->user_has_stored_data($customer_id);
-        if (!$customer_check['status'] and $customer_check['pay_code']!='P026') {
-            $customer_card_id = $customer_check['result_array'][0]['customer_card_id'];
-        } else {
-            $stored_user_card_data = $this->add_stored_user_data($customer_id, $card_token);
-            $customer_card_id = $stored_user_card_data['customer_card_id'];
+        // Send authorize credit card token request
+        $result = $this->sendAuthorizePaymentRequest($input);
+        // Return response request if fail
+        if (!$result['success']) {
+            return $result;
         }
-        $this->add_stored_user_data($customer_id, $card_token);
-
-        $this->paygent->reqPut('3dsecure_ryaku', 1);
-
-        $payment_class = '1' === $split_count ? 10 : 61;
-        $this->paygent->reqPut('split_count', $split_count);
-        $this->paygent->reqPut('payment_class', 10);
-        $this->paygent->reqPut('stock_card_mode', 1);
-        $this->paygent->reqPut('customer_id', $customer_id);
-        $this->paygent->reqPut('customer_card_id', $customer_card_id);
-        // $this->paygent->reqPut('card_token', $card_token);
-        $this->paygent->reqPut('trading_id', $trading_id);
-        $this->paygent->reqPut('payment_amount', $payment_amount);
-        $this->paygent->reqPut('payment_id', '');
-
-
-        // Payment Types
-        $this->paygent->reqPut('telegram_kind', '020');
-        // send
-        $result = $this->paygent->post();
-        // 1 request failed, 0 request succeeded
-        if (true !== $result) {
-            return ['code' => 1, 'result' => $result];
-        } else {
-            // After the request is successful, directly confirm the payment
-            if ($this->paygent->hasResNext()) {
-                $res = $this->paygent->resNext();
-                $this->paygent->reqPut('payment_id', $res['payment_id']);
-                // Credit card confirmation payment
-                $this->paygent->reqPut('telegram_kind', '022');
-            }
-            // send
-            $result = $this->paygent->post();
-
-            if (true !== $result) {
-                return ['code' => 1, 'result' => $result];
-            }
-
-            $response = [
-                'code' => 0,
-                'status' => $this->paygent->getResultStatus(),
-                'pay_code' => $this->paygent->getResponseCode(), // 0 for success, 1 for failure, others are specific error codes
-                'payment_id' => $res['payment_id'],
-                'detail' => $this->iconv_parse($this->paygent->getResponseDetail()),
-            ];
-
-            return $response;
-        }
+        // Define response data of authorize payment request
+        $data = $result['data'];
+        // Send sales request
+        return self::sendSalesPaymentRequest($data['payment_id']);
     }
     
        /*
@@ -165,65 +116,6 @@ class Paygent
                 'running_id' => $res['running_id'],
                 'detail' => $this->iconv_parse($this->paygent->getResponseDetail())
             ];
-
-            return $response;
-        }
-    }
-
-    public function add_stored_user_data($customer_id, $card_token)
-    {
-        $this->paygent->reqPut('trading_id', '');
-        $this->paygent->reqPut('customer_id', $customer_id);
-        $this->paygent->reqPut('card_token', $card_token);
-        $this->paygent->reqPut('telegram_kind','025');
-
-        $result = $this->paygent->post();
-
-        if (true !== $result) {
-            return ['code' => 1, 'result' => $result];
-        } else {
-            // request succeeded
-            if ($this->paygent->hasResNext()) {
-                $res = $this->paygent->resNext();
-            }
-
-
-            $response = [
-                'code' => 0,
-                'status' => $this->paygent->getResultStatus(),
-                'pay_code' => $this->paygent->getResponseCode(), // 0 for success, 1 for failure, others are specific error codes
-                'detail' => $this->iconv_parse($this->paygent->getResponseDetail()),
-                "customer_card_id" => $res['customer_card_id']
-                ];
-
-            return $response;
-        }
-    }
-
-    public function user_has_stored_data($customer_id, $customer_card_id=null)
-    {
-        $this->paygent->reqPut('trading_id', '');
-        $this->paygent->reqPut('customer_id', $customer_id);
-        $this->paygent->reqPut('telegram_kind','027');
-
-        $res_array = array();
-        $result = $this->paygent->post();
-
-        if (true !== $result) {
-            return ['code' => 1, 'result' => $result];
-        } else {
-            // request succeeded
-            if ($this->paygent->hasResNext()) {
-                $res_array[] = $this->paygent->resNext();
-            }
-
-            $response = [
-                'code' => 0,
-                'status' => $this->paygent->getResultStatus(),
-                'pay_code' => $this->paygent->getResponseCode(), // 0 for success, 1 for failure, others are specific error codes
-                'detail' => $this->iconv_parse($this->paygent->getResponseDetail()),
-                "result_array"=> $res_array
-                ];
 
             return $response;
         }
@@ -412,5 +304,174 @@ class Paygent
     public function getPaygent()
     {
         return $this->paygent;
+    }
+
+    private function sendAuthorizePaymentRequest($input = [])
+    {
+        $paygent = $this->paygent;
+        $paygent->reqPut('3dsecure_ryaku', 1);
+        $paygent->reqPut('payment_class', 10);
+        $paygent->reqPut('card_token', $input['token']);
+        $paygent->reqPut('trading_id', $input['trading_id']);
+        $paygent->reqPut('payment_amount', $input['payment_amount']);
+        $paygent->reqPut('telegram_kind', '020');
+        $result = $paygent->post();
+        // Log request info and response
+        $response = $paygent->resNext();
+        self::logPaymentRequestInfo($paygent, null, [
+            "response_data" => $response,
+        ]);
+        // If payment request is fail
+        if ($paygent->getResultStatus() == 1) {
+            $responseCode = $paygent->getResponseCode();
+            $errorMessage = self::iconv_parse($paygent->getResponseDetail());
+            return [
+                "success" => false,
+                'response_code' => $paygent->getResponseCode(),
+                'response_message' => self::iconv_parse($paygent->getResponseDetail()),
+            ];
+        }
+        return [
+            "success" => true,
+            "data" => $response,
+        ];
+    }
+
+    private function sendSalesPaymentRequest($paymentId)
+    {
+        $paygent = $this->paygent;
+        $paygent->reqPut('telegram_kind', '022');
+        $paygent->reqPut('payment_id', $paymentId);
+        $result = $paygent->post();
+        // Log request info and response
+        $response = $paygent->resNext();
+        self::logPaymentRequestInfo($paygent, null, [
+            "response_data" => $response,
+        ]);
+        // If payment request is fail
+        if ($paygent->getResultStatus() == 1) {
+            $responseCode = $paygent->getResponseCode();
+            $errorMessage = self::iconv_parse($paygent->getResponseDetail());
+            return [
+                "success" => false,
+                'response_code' => $paygent->getResponseCode(),
+                'response_message' => self::iconv_parse($paygent->getResponseDetail()),
+            ];
+        }
+        return [
+            "success" => true,
+            "data" => $response,
+        ];
+    }
+
+    /**
+     * Log request info and response of the payment request
+     * @param  [type] $paygent [description]
+     * @param  array  $data    [description]
+     * @return [type]          [description]
+     */
+    private function logPaymentRequestInfo($paygent, $options = [], $data = [])
+    {
+        $message = ['created_at' => now()->format('Y-m-d H:i:s')];
+        $channel = $options['channel'] ?? 'paygent';
+        // Add payment request info
+        $message['request'] = $paygent->telegramParam;
+        // Add payment response info
+        $message['response'] = [
+            "response_status" => $paygent->getResultStatus(),
+            "response_code" => $paygent->getResponseCode(),
+            "response_message" => self::iconv_parse($paygent->getResponseDetail()),
+            "response_data" => $data['response_data'] ?? [],
+        ];
+        \Log::channel($channel)->info($message);
+    }
+
+    /**
+     * Check valid token
+     * @param  array  $input [description]
+     * @param  string  token
+     * @param  string  masked_card_number
+     * @param  string  valid_until
+     * @param  string  fingerprint
+     * @return [type]        [description]
+     */
+    private function checkValidToken($input = [])
+    {
+        // Refer to official document of Paygent about token payment
+        $token_hash_key = config('services.paygent.token_hash_key');
+        $str = "{$input['token']}{$input['masked_card_number']}{$input['valid_until']}{$input['fingerprint']}{$token_hash_key}";
+        $hashStr = hash("sha256", $str);
+        return !(empty($input['hc']) || $hashStr !== $input['hc']);
+    }
+
+    public function makeATM_PaymentRequest($input = [])
+    {
+        $paygent = $this->paygent;
+        $paygent->reqPut('telegram_kind', "010");
+        $paygent->reqPut('trading_id', $input['trading_id']);
+        $paygent->reqPut('payment_amount', $input['payment_amount']);
+        $paygent->reqPut('customer_name', self::iconv_parse2($input['customer_name']));
+        $paygent->reqPut('customer_family_name', self::iconv_parse2($input['customer_family_name']));
+        $paygent->reqPut('payment_detail', self::iconv_parse2("ファンクラブカイヒ"));
+        $paygent->reqPut('payment_detail_kana', self::iconv_parse2("ファンクラブカイヒ"));
+        $paygent->reqPut('payment_limit_date', 5);
+        $result = $paygent->post();
+        // Log request info and response
+        $response = $paygent->resNext();
+        self::logPaymentRequestInfo($paygent, null, [
+            "response_data" => $response,
+        ]);
+        // If payment request is fail
+        if ($paygent->getResultStatus() == 1) {
+            $responseCode = $paygent->getResponseCode();
+            $errorMessage = self::iconv_parse($paygent->getResponseDetail());
+            return [
+                "success" => false,
+                'response_code' => $paygent->getResponseCode(),
+                'response_message' => self::iconv_parse($paygent->getResponseDetail()),
+            ];
+        }
+        return [
+            "success" => true,
+            "data" => $response,
+        ];
+    }
+
+    public function makeConvenienceStorePaymentRequest($input = [])
+    {
+        $paygent = $this->paygent;
+        // Default is payment with convenience store number system
+        $telegramKind = $input['telegram_kind'] ?? "030";
+        $paygent->reqPut('telegram_kind', $telegramKind);
+        $paygent->reqPut('trading_id', $input['trading_id']);
+        $paygent->reqPut('payment_amount', $input['payment_amount']);
+        $paygent->reqPut('customer_tel', str_replace("-", "", $input['customer_tel']));
+        $paygent->reqPut('customer_name', self::iconv_parse2($input['customer_name']));
+        $paygent->reqPut('customer_family_name', self::iconv_parse2($input['customer_family_name']));
+        $paygent->reqPut('payment_limit_date', 5);
+        if ($telegramKind == "030") {
+            $paygent->reqPut('cvs_company_id', $input['cvs_company_id']);
+            $paygent->reqPut('sales_type', 1);
+        }
+        $result = $paygent->post();
+        // Log request info and response
+        $response = $paygent->resNext();
+        self::logPaymentRequestInfo($paygent, null, [
+            "response_data" => $response,
+        ]);
+        // If payment request is fail
+        if ($paygent->getResultStatus() == 1) {
+            $responseCode = $paygent->getResponseCode();
+            $errorMessage = self::iconv_parse($paygent->getResponseDetail());
+            return [
+                "success" => false,
+                'response_code' => $paygent->getResponseCode(),
+                'response_message' => self::iconv_parse($paygent->getResponseDetail()),
+            ];
+        }
+        return [
+            "success" => true,
+            "data" => $response,
+        ];
     }
 }

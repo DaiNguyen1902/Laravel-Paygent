@@ -24,6 +24,15 @@ Add to the config/services.php file
     'telegram_version' => env('PAYGENT_TELEGRAM_VERSION', '1.0'),
 ]
 ```
+Add to the config/logging.php file
+```
+'paygent' => [
+    'driver' => 'daily',
+    'path' => storage_path('logs/paygent/paygent.log'),
+    'level' => env('LOG_LEVEL', 'debug'),
+    'days' => 100,
+],
+```
 How to get paygent instance:
 ```
 $paygent = app('paygent')->getPaygent();
