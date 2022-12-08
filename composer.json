@@ -1,0 +1,24 @@
+{
+    "name": "paygent/sdk",
+    "description": "A paygent SDK.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "",
+            "email": ""
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "paygent\\sdk\\": "./src"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "paygent\\sdk\\ServiceProvider"
+            ]
+        }
+    }
+}
