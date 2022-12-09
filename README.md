@@ -37,7 +37,53 @@ Add to the config/logging.php file
     'days' => 100,
 ],
 ```
-How to get paygent instance:
+How to make onetime payment request via Credit Card:
+```
+$result = app('paygent')->makeCreditCardPayment([
+    "token" => "<credit card token>",
+    "trading_id" => "<order id is stored in DB>",
+    "payment_amount" => "<amount>",
+]);
+```
+How to make payment request via ATM:
+```
+$result = app('paygent')->makeATM_PaymentRequest([
+    "trading_id" => "<order id is stored in DB>",
+    "payment_amount" => "<amount>",
+    "customer_name" => "<customer name>",
+    "customer_family_name" => "<customer familyname>",
+    "payment_detail" => "payment detail",
+    "payment_detail_kana" => "payment detail kana",
+]);
+```
+How to make payment request via Convenience Store (number system):
+```
+$result = app('paygent')->makeConvenienceStorePaymentRequest([
+    "trading_id" => "<order id is stored in DB>",
+    "payment_amount" => "<amount>",
+    "customer_name" => "<customer name>",
+    "customer_family_name" => "<customer familyname>",
+    "customer_tel" => "<customer telephone>",
+    "cvs_company_id" => "<convenience store company id>", // '00C002' => 'Lawson' | '00C004' => 'Ministop' | '00C005' => 'FamilyMart' | '00C014' => 'DailyYamazaki' | '00C016' => 'SeicoMart'
+]);
+```
+How to make payment request via NetBanking:
+```
+$result = app('paygent')->makeATM_PaymentRequest([
+    "trading_id" => "<order id is stored in DB>",
+    "amount" => "<amount>",
+    "customer_name" => "<customer name>",
+    "customer_family_name" => "<customer familyname>",
+    "claim_kana" => "claim kana",
+    "claim_kanji" => "claim kanji",
+]);
+```
+How to custom send payment request
 ```
 $paygent = app('paygent')->getPaygent();
+$paygent->reqPut("<parameter name>", <parameter value>);
+...
+$result = $paygent->post();
+// Response data is returned
+$data = $paygent->resNext();
 ```

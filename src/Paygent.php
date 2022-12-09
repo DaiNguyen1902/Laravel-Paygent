@@ -412,8 +412,8 @@ class Paygent
         $paygent->reqPut('payment_amount', $input['payment_amount']);
         $paygent->reqPut('customer_name', self::iconv_parse2($input['customer_name']));
         $paygent->reqPut('customer_family_name', self::iconv_parse2($input['customer_family_name']));
-        $paygent->reqPut('payment_detail', self::iconv_parse2("ファンクラブカイヒ"));
-        $paygent->reqPut('payment_detail_kana', self::iconv_parse2("ファンクラブカイヒ"));
+        $paygent->reqPut('payment_detail', self::iconv_parse2($input['payment_detail'] ?? "ファンクラブカイヒ"));
+        $paygent->reqPut('payment_detail_kana', self::iconv_parse2($input['payment_detail_kana'] ?? "ファンクラブカイヒ"));
         $paygent->reqPut('payment_limit_date', 5);
         $result = $paygent->post();
         // Log request info and response
@@ -484,8 +484,8 @@ class Paygent
         $paygent->reqPut('amount', $input['payment_amount']);
         $paygent->reqPut('customer_name', self::iconv_parse2($input['customer_name']));
         $paygent->reqPut('customer_family_name', self::iconv_parse2($input['customer_family_name']));
-        $paygent->reqPut('claim_kana', self::iconv_parse2("ファンクラブカイヒ"));
-        $paygent->reqPut('claim_kanji', self::iconv_parse2("ファンクラブ会費"));
+        $paygent->reqPut('claim_kana', self::iconv_parse2($input['claim_kana'] ?? "ファンクラブカイヒ"));
+        $paygent->reqPut('claim_kanji', self::iconv_parse2($input['claim_kanji'] ?? "ファンクラブ会費"));
         $paygent->reqPut('asp_payment_term', "0050000");
         $result = $paygent->post();
         // Log request info and response
