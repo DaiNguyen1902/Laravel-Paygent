@@ -1,4 +1,8 @@
 # Paygent-Laravel
+How to install
+```
+composer require laravel-paygent/mdk
+```
 Add these below variables to the .env file:
 ```
 PAYGENT_ENV=local
