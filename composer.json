@@ -1,5 +1,5 @@
 {
-    "name": "paygent-laravel/mdk",
+    "name": "laravel-paygent/mdk",
     "description": "Paygent Laravel MDK.",
     "license": "MIT",
     "authors": [
@@ -11,13 +11,13 @@
     "require": {},
     "autoload": {
         "psr-4": {
-            "PaygentLaravel\\MDK\\": "./src"
+            "LaravelPaygent\\MDK\\": "./src"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "PaygentLaravel\\MDK\\ServiceProvider"
+                "LaravelPaygent\\MDK\\ServiceProvider"
             ]
         }
     }

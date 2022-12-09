@@ -1,10 +1,10 @@
 <?php
 
-namespace PaygentLaravel\MDK;
+namespace LaravelPaygent\MDK;
 
 require __DIR__.'/vendor/autoload.php';
 
-use PaygentLaravel\MDK\Exceptions\InvalidArgumentException;
+use LaravelPaygent\MDK\Exceptions\InvalidArgumentException;
 use PaygentModule\System\PaygentB2BModule;
 
 date_default_timezone_set('Asia/Tokyo');

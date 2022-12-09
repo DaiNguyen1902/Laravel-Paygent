@@ -1,6 +1,6 @@
 <?php
 
-namespace paygent\sdk\Exceptions;
+namespace LaravelPaygent\MDK\Exceptions;
 
 class Exception extends \Exception
 {

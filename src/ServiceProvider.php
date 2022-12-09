@@ -1,6 +1,6 @@
 <?php
 
-namespace PaygentLaravel\MDK;
+namespace LaravelPaygent\MDK;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {
