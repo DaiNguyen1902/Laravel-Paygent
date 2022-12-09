@@ -1,10 +1,10 @@
 <?php
 
-namespace paygent\sdk;
+namespace PaygentLaravel\MDK;
 
 require __DIR__.'/vendor/autoload.php';
 
-use paygent\sdk\Exceptions\InvalidArgumentException;
+use PaygentLaravel\MDK\Exceptions\InvalidArgumentException;
 use PaygentModule\System\PaygentB2BModule;
 
 date_default_timezone_set('Asia/Tokyo');
@@ -469,6 +469,42 @@ class Paygent
                 'response_message' => self::iconv_parse($paygent->getResponseDetail()),
             ];
         }
+        return [
+            "success" => true,
+            "data" => $response,
+        ];
+    }
+
+    public function makeNetBankingPaymentRequest($input = [])
+    {
+        $paygent = $this->paygent;
+        // Default is payment with convenience store number system
+        $paygent->reqPut('telegram_kind', "060");
+        $paygent->reqPut('trading_id', $input['trading_id']);
+        $paygent->reqPut('amount', $input['payment_amount']);
+        $paygent->reqPut('customer_name', self::iconv_parse2($input['customer_name']));
+        $paygent->reqPut('customer_family_name', self::iconv_parse2($input['customer_family_name']));
+        $paygent->reqPut('claim_kana', self::iconv_parse2("ファンクラブカイヒ"));
+        $paygent->reqPut('claim_kanji', self::iconv_parse2("ファンクラブ会費"));
+        $paygent->reqPut('asp_payment_term', "0050000");
+        $result = $paygent->post();
+        // Log request info and response
+        $response = $paygent->resNext();
+        self::logPaymentRequestInfo($paygent, null, [
+            "response_data" => $response,
+        ]);
+        // If payment request is fail
+        if ($paygent->getResultStatus() == 1) {
+            $responseCode = $paygent->getResponseCode();
+            $errorMessage = self::iconv_parse($paygent->getResponseDetail());
+            return [
+                "success" => false,
+                'response_code' => $paygent->getResponseCode(),
+                'response_message' => self::iconv_parse($paygent->getResponseDetail()),
+            ];
+        }
+        $response['claim_kana'] = self::iconv_parse($response['claim_kana']);
+        $response['claim_kanji'] = self::iconv_parse($response['claim_kanji']);
         return [
             "success" => true,
             "data" => $response,

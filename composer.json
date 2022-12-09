@@ -1,23 +1,23 @@
 {
-    "name": "paygent/sdk",
-    "description": "A paygent SDK.",
+    "name": "paygent-laravel/mdk",
+    "description": "Paygent Laravel MDK.",
     "license": "MIT",
     "authors": [
         {
-            "name": "",
-            "email": ""
+            "name": "DaiND",
+            "email": "daind@sudobo.com"
         }
     ],
     "require": {},
     "autoload": {
         "psr-4": {
-            "paygent\\sdk\\": "./src"
+            "PaygentLaravel\\MDK\\": "./src"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "paygent\\sdk\\ServiceProvider"
+                "PaygentLaravel\\MDK\\ServiceProvider"
             ]
         }
     }
